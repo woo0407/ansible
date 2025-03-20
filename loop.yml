@@ -1,0 +1,13 @@
+---
+- name: loop 예시
+  hosts: localhost
+  become: yes  # 관리자 권한으로 실행 (필요 시)
+  tasks:
+    - name: 여러 패키지 설치
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - nginx
+        - curl
+        - git

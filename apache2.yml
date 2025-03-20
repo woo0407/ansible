@@ -1,0 +1,46 @@
+- name: Install and configure Apache web server on Ubuntu
+  hosts: all
+  become: yes  # 관리자 권한으로 실행
+  tasks:
+    # 1. apt 패키지 목록 갱신
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600  # 1시간 동안 유효한 캐시
+
+    # 2. Apache2 설치
+    - name: Install Apache2 web server
+      apt:
+        name: apache2
+        state: present
+
+    # 3. Apache 서비스 시작
+    - name: Ensure Apache2 is running
+      service:
+        name: apache2
+        state: started
+        enabled: yes  # 부팅 시 자동 시작
+
+    # 4. 방화벽 설정 (UFW 사용 시)
+    - name: Allow Apache traffic through firewall
+      ufw:
+        rule: allow
+        name: 'Apache Full'
+        state: enabled
+    # 설정 시 putty 끊김 -> 각 서버 접속 : ufw disable(방화벽 해제)
+
+    # 5. 기본 웹 페이지 작성 (선택 사항)
+    - name: Create a simple index.html page
+      copy:                             // copy 소스내용 [목적지]
+        content: "<html><body><h1>Apache is installed and running!</h1></body></html>"
+        dest: /var/www/html/index.html
+        owner: www-data     // chown www-data.www-data index.html
+        group: www-data
+        mode: '0644'        // chmod 644 index.html
+
+    # 6. Apache 서비스 재시작 (설정 적용)
+    - name: Restart Apache2 service  // systemctl restart apache2
+      service:
+        name: apache2
+        state: restarted
+

@@ -1,0 +1,74 @@
+- name: Install and configure vsftpd on Ubuntu 22.04 and create user7
+  hosts: all
+  become: true
+  tasks:
+
+    # Step 1: Install vsftpd
+    - name: Install vsftpd
+      apt:
+        name: vsftpd
+        state: present
+        update_cache: yes
+
+    # Step 2: Ensure vsftpd service is running and enabled
+    - name: Ensure vsftpd service is running and enabled
+      service:
+        name: vsftpd
+        state: started
+        enabled: yes
+
+    # Step 3: Configure vsftpd to disable anonymous login
+    - name: Configure vsftpd settings (disable anonymous login)
+      lineinfile:
+        path: /etc/vsftpd.conf
+        regexp: '^#?anonymous_enable='
+        line: 'anonymous_enable=NO'
+
+    # Step 4: Configure vsftpd to enable chroot for all users (isolating users to their home directories)
+    - name: Configure vsftpd to chroot users to their home directories
+      lineinfile:
+        path: /etc/vsftpd.conf
+        regexp: '^#?chroot_local_user='
+        line: 'chroot_local_user=YES'
+
+    - name: Add allow_writeable_chroot setting in vsftpd.conf
+      lineinfile:
+        path: /etc/vsftpd.conf
+        regexp: '^#?allow_writeable_chroot='
+        line: 'allow_writeable_chroot=YES'
+
+    - name: Ensure vsftpd allows local users
+      lineinfile:
+        path: /etc/vsftpd.conf
+        regexp: '^#?local_enable='
+        line: 'local_enable=YES'
+
+    # Step 5: Create user2 for FTP access
+    - name: Create user2 for FTP access
+      user:
+        name: user7
+        state: present
+        comment: "FTP User7"
+        shell: /bin/bash
+        home: /home/user7
+
+    # Step 6: Set password for user7
+    - name: Set password for user7
+      ansible.builtin.user:
+        name: user7
+        password: "{{ 'test123' | password_hash('sha512') }}"
+
+    # Step 7: Set proper permissions for user2's home directory
+    - name: Set correct permissions for user2's home directory
+      file:
+        path: /home/user7
+        owner: user7
+        group: user7
+        mode: '0755'
+        state: directory
+
+    - name: Restart vsftpd service
+      service:
+        name: vsftpd
+        state: restarted
+

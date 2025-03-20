@@ -1,0 +1,57 @@
+- name: Install and configure DHCP server on Ubuntu
+  hosts: web
+  become: yes  # 관리자 권한으로 실행
+  tasks:
+    # 1. apt 패키지 목록 갱신
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600  # 1시간 동안 유효한 캐시
+
+    # 2. ISC DHCP 서버 설치
+    - name: Install ISC DHCP server
+      apt:
+        name: isc-dhcp-server
+        state: present
+
+    # 3. /etc/dhcp/dhcpd.conf 파일 설정
+    - name: Configure DHCP server settings
+      copy:
+        dest: /etc/dhcp/dhcpd.conf
+        content: |
+          # Sample DHCP Configuration
+
+          # 기본 설정
+          authoritative;
+
+          # 서브넷 정의
+          subnet 192.168.20.0 netmask 255.255.255.0 {
+              range 192.168.20.100 192.168.20.200;
+              option domain-name-servers 223.255.255.15;
+              option routers 192.168.20.254;
+              option broadcast-address 192.168.20.255;
+              default-lease-time 600;
+              max-lease-time 7200;
+          }
+
+    # 4. DHCP 서버 인터페이스 설정
+    - name: Set DHCP server to use the correct interface
+      lineinfile:
+        path: /etc/default/isc-dhcp-server
+        regexp: '^INTERFACESv4'
+        line: 'INTERFACESv4="ens3"'
+
+    # 5. DHCP 서버 서비스 시작
+    - name: Ensure DHCP server is running
+      service:
+        name: isc-dhcp-server
+        state: started
+        enabled: yes  # 부팅 시 자동 시작
+
+    # 6. 방화벽 설정 (UFW 사용 시)
+    #- name: Allow DHCP traffic through firewall
+    #  ufw:
+    #    rule: allow
+    #    name: 'DHCP'
+    #    state: enabled
+

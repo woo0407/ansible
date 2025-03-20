@@ -1,0 +1,73 @@
+- name: Install and configure Nginx with one virtual host on Ubuntu
+  hosts: db
+  become: yes
+  tasks:
+    # 1. Nginx 설치
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    # 2. 가상 서버 설정 파일 생성 (naver.com)
+    - name: Create the configuration for naver.com
+      copy:
+        dest: /etc/nginx/sites-available/naver.com
+        content: |
+          server {
+              listen 80;
+              server_name www.naver.com;
+
+              root /var/www/naver;
+              index index.html;
+
+              location / {
+                  try_files $uri $uri/ =404;
+              }
+          }
+        owner: root
+        group: root
+        mode: '0644'
+
+    # 3. 가상 서버 링크 생성 (naver.com)
+    - name: Enable naver.com site
+      file:
+        src: /etc/nginx/sites-available/naver.com
+        dest: /etc/nginx/sites-enabled/naver.com
+        state: link
+
+    # 4. 웹 콘텐츠 디렉토리 생성 (naver.com)
+    - name: Create directory for naver.com
+      file:
+        path: /var/www/naver
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    # 5. index.html 파일 생성 (naver.com)
+    - name: Create index.html for naver.com
+      copy:
+        dest: /var/www/naver/index.html
+        content: "Welcome to naver.com"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    # 6. Nginx 설정 구문 테스트
+    - name: Test nginx configuration
+      command: nginx -t
+      register: nginx_test
+      ignore_errors: yes
+
+    - name: Fail if nginx configuration test fails
+      fail:
+        msg: "Nginx configuration test failed!"
+      when: nginx_test.rc != 0
+
+    # 7. Nginx 재시작
+    - name: Restart nginx
+      systemd:
+        name: nginx
+        state: restarted
+        enabled: yes

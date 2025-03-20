@@ -1,0 +1,67 @@
+- name: Install and configure DNS server (BIND9) on Ubuntu
+  hosts: web
+  become: yes
+  tasks:
+    # 1. apt 패키지 목록 갱신
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    # 2. BIND9 설치
+    - name: Install BIND9 DNS server
+      apt:
+        name: bind9
+        state: present
+
+    # 3. BIND9 서비스 시작
+    - name: Ensure BIND9 is running
+      service:
+        name: bind9
+        state: started
+        enabled: yes
+
+    # 4. DNS 설정 파일 /etc/bind/named.conf.local 생성
+    - name: Configure named.conf.local for DNS zones
+      blockinfile:
+        path: /etc/bind/named.conf.local
+        block: |
+          // Configure zone for naver.com
+          zone "naver.com" {
+              type master;
+              file "/etc/bind/db.naver.com";
+          };
+        owner: root
+        group: bind
+        mode: '0644'
+
+    # 5. DNS 데이터베이스 파일 생성
+    - name: Create zone database file for naver.com
+      copy:
+        dest: /etc/bind/db.naver.com
+        content: |
+          $TTL    604800
+          @       IN      SOA     ns1.naver.com. admin.naver.com. (
+                        2023022501  ; Serial
+                        86400       ; Refresh
+                        7200        ; Retry
+                        1209600     ; Expire
+                        86400 )      ; Minimum TTL
+
+          ; Name servers
+          @       IN      NS      ns1.naver.com.
+
+          ; A records for name servers
+          ns1     IN      A       192.168.20.1
+
+          ; A record for naver.com
+          www     IN      A       192.168.30.1
+        owner: root
+        group: bind
+        mode: '0644'
+
+    # 6. BIND9 서비스 재시작 (설정 적용)
+    - name: Restart BIND9 service to apply configuration changes
+      service:
+        name: bind9
+        state: restarted

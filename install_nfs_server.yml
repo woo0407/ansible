@@ -1,0 +1,47 @@
+---
+- name: Install and configure NFS server on Ubuntu
+  hosts: web
+  become: yes  # 관리자 권한으로 실행
+  tasks:
+    # 1. apt 패키지 목록 갱신
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600  # 1시간 동안 유효한 캐시
+
+    # 2. NFS 서버 설치
+    - name: Install NFS server
+      apt:
+        name: nfs-kernel-server
+        state: present
+
+    # 3. 공유 디렉토리 생성
+    - name: Create shared directory
+      file:
+        path: /sales
+        state: directory
+        mode: '0777'  # 모든 사용자에게 읽기, 쓰기, 실행 권한 부여
+
+    # 4. /etc/exports 파일 수정 (공유 설정)
+    - name: Configure /etc/exports file for NFS shares
+      lineinfile:
+        path: /etc/exports
+        line: "/srv/nfs *(rw,sync)"
+        create: yes
+
+    # 5. NFS 서버 서비스 시작
+    - name: Ensure NFS server is running
+      service:
+        name: nfs-kernel-server
+        state: started
+        enabled: yes  # 부팅 시 자동 시작
+
+    # 7. NFS 서버의 공유 설정 적용
+    - name: Apply the NFS exports configuration
+      command: exportfs -a
+
+    # 8. NFS 서버 서비스 재시작 (설정 적용)
+    - name: Restart NFS server service
+      service:
+        name: nfs-kernel-server
+        state: restarted

@@ -1,0 +1,34 @@
+---
+- name: Mount NFS share on Ubuntu
+  hosts: db  # 대상 호스트를 지정하세요
+  become: yes  # 관리자 권한으로 실행
+  tasks:
+    - name: Install nfs-common package
+      apt:
+        name: nfs-common
+        state: present
+        update_cache: yes
+
+    - name: Create mount point directory
+      file:
+        path: /dir1  # 마운트할 디렉토리 경로
+        state: directory
+        mode: '0755'
+
+    - name: Mount NFS share
+      mount:
+        path: /dir1  # 마운트할 디렉토리
+        src: "192.168.20.1:/sales"  # NFS 서버 및 공유 디렉토리 (예: 192.168.1.100:/export/data)
+        fstype: nfs
+        opts: rw,sync  # 마운트 옵션 (읽기/쓰기, 동기화)
+        state: mounted
+
+    - name: Ensure NFS mount is persistent across reboots
+      mount:
+        path: /mnt/nfs_share
+        src: "192.168.20.1:/sales"
+        fstype: nfs
+        opts: rw,sync
+        state: mounted
+        dump: 0
+        passno: 0

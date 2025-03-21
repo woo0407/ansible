@@ -25,7 +25,7 @@
 
     - name: Ensure NFS mount is persistent across reboots
       mount:
-        path: /mnt/nfs_share
+        path: /dir1
         src: "192.168.20.1:/sales"
         fstype: nfs
         opts: rw,sync

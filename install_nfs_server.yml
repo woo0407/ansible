@@ -26,7 +26,7 @@
     - name: Configure /etc/exports file for NFS shares
       lineinfile:
         path: /etc/exports
-        line: "/srv/nfs *(rw,sync)"
+        line: "/sales *(rw,sync)"
         create: yes
 
     # 5. NFS 서버 서비스 시작

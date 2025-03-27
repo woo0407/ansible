@@ -1,5 +1,5 @@
 - name: Install and configure Nginx with one virtual host on Ubuntu
-  hosts: db
+  hosts: aws_ec2
   become: yes
   tasks:
     # 1. Nginx 설치

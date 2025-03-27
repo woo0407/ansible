@@ -1,0 +1,48 @@
+- name: Install and configure Nginx on Ubuntu
+  hosts: aws_ec2
+  become: yes  # 관리자 권한으로 실행
+  tasks:
+    # 1. apt 패키지 목록 갱신
+      - name: Update apt cache
+        apt:
+          update_cache: yes
+          cache_valid_time: 3600  # 1시간 동안 유효한 캐시
+
+    # 2. Nginx 설치
+      - name: Install Nginx
+        apt:
+          name: nginx
+          state: present
+
+    # 3. Nginx 서비스 시작
+      - name: Ensure Nginx is running
+        service:
+          name: nginx
+          state: started
+          enabled: yes  # 부팅 시 자동 시작
+
+    # 4. 방화벽 설정 (UFW 사용 시)
+    #- name: Allow Nginx traffic through firewall
+    #  ufw:
+    #    rule: allow
+    #    name: 'Nginx Full'
+    #    state: enabled
+
+    # 5.index.html 내용 변경
+      - name: Change the content of index.html
+        copy:
+          content: |
+            <html>
+              <head>
+                <title>Welcome to My Website</title>
+              </head>
+              <body>
+                <h1>Hello, welcome to my website hosted with Nginx!</h1>
+                <p>This is a simple Nginx setup configured via Ansible</p>
+              </body>
+            </html>
+          dest: /var/www/html/index.html
+          owner: www-data
+          group: www-data
+          mode: '0644'
+

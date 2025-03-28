@@ -1,0 +1,88 @@
+---
+- name: Install and configure MariaDB with Python3 and pip
+  hosts: db
+  become: yes  # sudo 권한으로 실행
+
+  tasks:
+    - name: Update apt package cache
+      apt:
+        update_cache: yes
+
+    - name: Install required packages (MariaDB, Python3, pip, MySQL dependencies)
+      apt:
+        name:
+          - mariadb-server
+          - python3
+          - python3-pip
+          - python3-mysqldb  # MySQL-Python 라이브러리 (Ansible mysql_user 모듈 필요)
+          - libmysqlclient-dev  # MySQL 클라이언트 라이브러리 (필요한 경우)
+        state: present
+
+    - name: Start and enable MariaDB service
+      service:
+        name: mariadb
+        state: started
+        enabled: yes
+
+    - name: Ensure MariaDB root password is set
+      mysql_user:
+        name: root
+        host: localhost
+        password: "1234"
+        login_user: root
+        login_password: "1234"
+        plugin: mysql_native_password
+        state: present
+        update_password: always
+      ignore_errors: yes  # 초기 설정 오류 방지
+
+    - name: Create .my.cnf for Ansible root access
+      copy:
+        dest: /root/.my.cnf
+        content: |
+          [client]
+          user=root
+          password=1234
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: Restart MariaDB service after password change
+      service:
+        name: mariadb
+        state: restarted
+
+    - name: Ensure root can login from any host
+      mysql_user:
+        name: root
+        host: '%'
+        password: "1234"
+        login_user: root
+        login_password: "1234"
+        state: present
+
+    - name: Change bind-address to allow remote connections
+      lineinfile:
+        path: /etc/mysql/mariadb.conf.d/50-server.cnf
+        regexp: '^bind-address'
+        line: 'bind-address = 0.0.0.0'
+      notify:
+        - Restart MariaDB
+
+    - name: Ensure MySQL database exists
+      mysql_db:
+        name: my_database
+        state: present
+
+    - name: Allow MySQL port through UFW (fixed)
+      ufw:
+        rule: allow
+        port: '3306'
+        proto: tcp
+
+  handlers:
+    - name: Restart MariaDB
+      service:
+        name: mariadb
+        state: restarted
+

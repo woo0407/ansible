@@ -1,5 +1,5 @@
 - name: Install and configure Nginx on Ubuntu
-  hosts: aws_ec2
+  hosts: EC2
   become: yes  # 관리자 권한으로 실행
   tasks:
     # 1. apt 패키지 목록 갱신
@@ -37,8 +37,7 @@
                 <title>Welcome to My Website</title>
               </head>
               <body>
-                <h1>Hello, welcome to my website hosted with Nginx!</h1>
-                <p>This is a simple Nginx setup configured via Ansible</p>
+                <h1>Hello!</h1>
               </body>
             </html>
           dest: /var/www/html/index.html
